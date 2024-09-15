@@ -1,12 +1,13 @@
 ![go](https://img.shields.io/badge/Go-00ADD8?logo=Go&logoColor=white&style=for-the-badge)
 ![mongodb](https://img.shields.io/badge/-MongoDB-13aa52?style=for-the-badge&logo=mongodb&logoColor=white)
-![img.png](assets/golang-banner.png)
 # User Authentication With Go, MongoDB And JWT
 
 - [Getting Started](#getting-started)
 - [Hexagonal Architecture](#hexagonal-architecture)
 
-<img src="assets/golang.png" alt="Go Gopher" style="float: right; width: 300px; margin-left: 20px;">
+<p align="center">
+  <img src="assets/golang.png" alt="Go Gopher" width="400">
+</p>
 
 ## Why I Did This?
 As a Java developer, I felt like I was stuck in a time machine. Then I heard about this hip new language called Go, and
