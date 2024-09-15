@@ -1,3 +1,4 @@
+// Package persistence provides functionality for user data persistence using MongoDB.
 package persistence
 
 import (
@@ -13,13 +14,25 @@ import (
 	"time"
 )
 
-// UserPersistenceAdapter implements UserPersistencePort interface.
+// UserPersistenceAdapter implements the persistence layer for user-related operations.
+// It encapsulates the MongoDB client and collection for user data.
 type UserPersistenceAdapter struct {
 	client     *mongo.Client
 	collection *mongo.Collection
 }
 
-// NewUserPersistenceAdapter creates a new UserPersistenceAdapter struct and returns a pointer to it.
+// NewUserPersistenceAdapter creates and initializes a new UserPersistenceAdapter.
+//
+// It establishes a connection to MongoDB using the provided connection string and database name.
+// The adapter uses a "user" collection within the specified database for all operations.
+//
+// Parameters:
+//   - connectionString: MongoDB connection URI
+//   - database: Name of the database to use
+//
+// Returns:
+//   - *UserPersistenceAdapter: A pointer to the newly created adapter
+//   - error: An error if the connection fails or cannot be verified
 func NewUserPersistenceAdapter(connectionString string, database string) (*UserPersistenceAdapter, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -39,6 +52,19 @@ func NewUserPersistenceAdapter(connectionString string, database string) (*UserP
 	return &UserPersistenceAdapter{client, collection}, nil
 }
 
+// SaveUser stores user credentials in the MongoDB database.
+//
+// It creates a new document in the "user" collection with the provided username,
+// hashed password, and the current timestamp.
+//
+// Parameters:
+//   - username: The username of the user to be saved
+//   - hashedPassword: The pre-hashed password of the user
+//
+// Returns:
+//   - error: An error if the save operation fails, nil otherwise
+//
+// The function logs the ID of the newly inserted document on success.
 func (u *UserPersistenceAdapter) SaveUser(username string, hashedPassword string) error {
 	user := bson.M{
 		"username":  username,
@@ -55,6 +81,19 @@ func (u *UserPersistenceAdapter) SaveUser(username string, hashedPassword string
 	return nil
 }
 
+// IsUsernameAvailable checks if a given username is available for registration.
+//
+// It queries the database for an existing user with the provided username.
+//
+// Parameters:
+//   - username: The username to check for availability
+//
+// Returns:
+//   - bool: true if the username is available, false if it's already taken
+//   - error: An error if the database query fails, nil otherwise
+//
+// Note: This function returns false for both an existing username and a database error.
+// Check the error value to distinguish between these cases.
 func (u *UserPersistenceAdapter) IsUsernameAvailable(username string) (bool, error) {
 	filter := bson.M{"username": username}
 	existingUser := u.collection.FindOne(context.Background(), filter)
@@ -69,6 +108,28 @@ func (u *UserPersistenceAdapter) IsUsernameAvailable(username string) (bool, err
 	return true, nil
 }
 
+// LoadUser authenticates a user and generates a JWT token upon successful authentication.
+//
+// It takes a username and password as input, verifies the credentials against the stored
+// information in the database, and returns a signed JWT token if authentication is successful.
+//
+// Parameters:
+//   - username: The username of the user trying to authenticate.
+//   - password: The password provided by the user for authentication.
+//
+// Returns:
+//   - string: A signed JWT token if authentication is successful.
+//   - error: An error if authentication fails or if there's an issue during the process.
+//
+// Possible errors:
+//   - "failed to load user": If the user cannot be found in the database.
+//   - "invalid password format in database": If the stored password is not in the expected format.
+//   - "invalid password or username": If the provided credentials do not match.
+//   - "error comparing passwords": If there's an unexpected error during password comparison.
+//   - "error while creating jwt": If there's an issue generating the JWT token.
+//
+// Note: This function uses a hard-coded JWT key for demonstration purposes.
+// In a production environment, the key should be securely stored and accessed.
 func (u *UserPersistenceAdapter) LoadUser(username string, password string) (string, error) {
 	var result bson.M
 	err := u.collection.FindOne(context.Background(), bson.M{"username": username}).Decode(&result)
@@ -99,6 +160,16 @@ func (u *UserPersistenceAdapter) LoadUser(username string, password string) (str
 	return signedString, nil
 }
 
+// Close terminates the connection to the MongoDB database.
+//
+// It should be called when the UserPersistenceAdapter is no longer needed to ensure
+// proper cleanup of resources.
+//
+// Parameters:
+//   - ctx: A context.Context for managing the lifecycle of the disconnect operation.
+//
+// Returns:
+//   - error: An error if the disconnect operation fails, or nil if successful.
 func (u *UserPersistenceAdapter) Close(ctx context.Context) error {
 	return u.client.Disconnect(ctx)
 }

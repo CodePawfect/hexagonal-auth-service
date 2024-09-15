@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	// dependency injection brings ports and adapters together
 	userPersistence, err := persistence.NewUserPersistenceAdapter("mongodb://user:password@localhost:27017", "demo")
 	if err != nil {
 		log.Fatalf("Failed to create user persistence adapter: %v", err)
