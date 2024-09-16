@@ -8,20 +8,19 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"time"
 )
 
-// UserPersistenceAdapter implements the persistence layer for user-related operations.
+// UserPersistenceMongoAdapter implements the persistence layer for user-related operations.
 // It encapsulates the MongoDB client and collection for user data.
-type UserPersistenceAdapter struct {
+type UserPersistenceMongoAdapter struct {
 	client     *mongo.Client
 	collection *mongo.Collection
 }
 
-// NewUserPersistenceAdapter creates and initializes a new UserPersistenceAdapter.
+// NewUserPersistenceMongoAdapter creates and initializes a new UserPersistenceMongoAdapter.
 //
 // It establishes a connection to MongoDB using the provided connection string and database name.
 // The adapter uses a "user" collection within the specified database for all operations.
@@ -31,25 +30,12 @@ type UserPersistenceAdapter struct {
 //   - database: Name of the database to use
 //
 // Returns:
-//   - *UserPersistenceAdapter: A pointer to the newly created adapter
+//   - *UserPersistenceMongoAdapter: A pointer to the newly created adapter
 //   - error: An error if the connection fails or cannot be verified
-func NewUserPersistenceAdapter(connectionString string, database string) (*UserPersistenceAdapter, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionString))
-	if err != nil {
-		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
-	}
-
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
-	}
-
+func NewUserPersistenceMongoAdapter(client *mongo.Client, database string) (*UserPersistenceMongoAdapter, error) {
 	collection := client.Database(database).Collection("user")
 
-	return &UserPersistenceAdapter{client, collection}, nil
+	return &UserPersistenceMongoAdapter{client, collection}, nil
 }
 
 // SaveUser stores user credentials in the MongoDB database.
@@ -65,7 +51,7 @@ func NewUserPersistenceAdapter(connectionString string, database string) (*UserP
 //   - error: An error if the save operation fails, nil otherwise
 //
 // The function logs the ID of the newly inserted document on success.
-func (u *UserPersistenceAdapter) SaveUser(username string, hashedPassword string) error {
+func (u *UserPersistenceMongoAdapter) SaveUser(username string, hashedPassword string) error {
 	user := bson.M{
 		"username":  username,
 		"password":  hashedPassword,
@@ -94,7 +80,7 @@ func (u *UserPersistenceAdapter) SaveUser(username string, hashedPassword string
 //
 // Note: This function returns false for both an existing username and a database error.
 // Check the error value to distinguish between these cases.
-func (u *UserPersistenceAdapter) IsUsernameAvailable(username string) (bool, error) {
+func (u *UserPersistenceMongoAdapter) IsUsernameAvailable(username string) (bool, error) {
 	filter := bson.M{"username": username}
 	existingUser := u.collection.FindOne(context.Background(), filter)
 	if existingUser.Err() == nil {
@@ -130,7 +116,7 @@ func (u *UserPersistenceAdapter) IsUsernameAvailable(username string) (bool, err
 //
 // Note: This function uses a hard-coded JWT key for demonstration purposes.
 // In a production environment, the key should be securely stored and accessed.
-func (u *UserPersistenceAdapter) LoadUser(username string, password string) (string, error) {
+func (u *UserPersistenceMongoAdapter) LoadUser(username string, password string) (string, error) {
 	var result bson.M
 	err := u.collection.FindOne(context.Background(), bson.M{"username": username}).Decode(&result)
 	if err != nil {
@@ -163,7 +149,7 @@ func (u *UserPersistenceAdapter) LoadUser(username string, password string) (str
 
 // Close terminates the connection to the MongoDB database.
 //
-// It should be called when the UserPersistenceAdapter is no longer needed to ensure
+// It should be called when the UserPersistenceMongoAdapter is no longer needed to ensure
 // proper cleanup of resources.
 //
 // Parameters:
@@ -171,6 +157,6 @@ func (u *UserPersistenceAdapter) LoadUser(username string, password string) (str
 //
 // Returns:
 //   - error: An error if the disconnect operation fails, or nil if successful.
-func (u *UserPersistenceAdapter) Close(ctx context.Context) error {
+func (u *UserPersistenceMongoAdapter) Close(ctx context.Context) error {
 	return u.client.Disconnect(ctx)
 }
