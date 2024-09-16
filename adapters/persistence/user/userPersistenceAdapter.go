@@ -150,6 +150,7 @@ func (u *UserPersistenceAdapter) LoadUser(username string, password string) (str
 		return "", fmt.Errorf("error comparing passwords: %w", err)
 	}
 
+	//TODO: Set claims for the JWT token (username, role 'USER')
 	var jwtKey = []byte("my_secret_key") /*This is only for demo purpose, in a real application load the key from somewhere, for example an environment variable */
 	token := jwt.New(jwt.SigningMethodHS256)
 	signedString, err := token.SignedString(jwtKey)

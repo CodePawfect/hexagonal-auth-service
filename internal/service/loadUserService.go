@@ -33,9 +33,7 @@ func NewLoadUserService(userPersistence persistence.UserPersistencePort) *LoadUs
 // Returns:
 //   - bool: True if authentication is successful, false otherwise
 //   - error: An error if the authentication process fails, nil otherwise
-//
-// TODO: Implement actual authentication logic
 func (lu *LoadUserService) LoadUser(username string, password string) (bool, error) {
-	//TODO implement
+	//TODO implement LoadUser
 	return true, nil
 }
