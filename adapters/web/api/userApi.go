@@ -35,10 +35,9 @@ func NewUserApiAdapter(registerUserPort usecases.RegisterUserPort, loadUserPort 
 
 // InitUserRoutes sets up the HTTP routes for user-related operations.
 //
-// This method registers the necessary HTTP handlers with the default ServeMux.
-// Currently, it only sets up the route for user registration.
-func (ua *UserAdapter) InitUserRoutes() {
-	http.HandleFunc("POST /user/register", ua.handleUserRegister)
+// This method registers the necessary HTTP handlers with the given ServeMux.
+func (ua *UserAdapter) InitUserRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /user/register", ua.handleUserRegister)
 }
 
 // handleUserRegister handles HTTP POST requests for user registration.

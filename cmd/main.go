@@ -23,7 +23,9 @@ func main() {
 	registerUserService := service.NewRegisterUserService(userPersistence)
 	loadUserService := service.NewLoadUserService(userPersistence)
 	userApiAdapter := api.NewUserApiAdapter(registerUserService, loadUserService)
-	userApiAdapter.InitUserRoutes()
+
+	mux := http.NewServeMux()
+	userApiAdapter.InitUserRoutes(mux)
 
 	log.Println("Starting server on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
