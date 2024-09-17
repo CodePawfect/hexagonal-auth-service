@@ -6,6 +6,7 @@ package domain
 // It encapsulates the core attributes of a user: username and password.
 // This struct is used to represent user data across different layers of the application.
 type User struct {
-	username string
-	password string
+	Username string
+	Password string
+	Role     string
 }

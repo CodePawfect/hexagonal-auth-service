@@ -5,12 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"time"
+	"user-auth-hexagonal-architecture/internal/domain"
 )
 
 // UserPersistenceMongoAdapter implements the persistence layer for user-related operations.
@@ -55,6 +54,7 @@ func (u *UserPersistenceMongoAdapter) SaveUser(username string, hashedPassword s
 	user := bson.M{
 		"username":  username,
 		"password":  hashedPassword,
+		"role":      "USER",
 		"createdAt": time.Now(),
 	}
 
@@ -94,57 +94,41 @@ func (u *UserPersistenceMongoAdapter) IsUsernameAvailable(username string) (bool
 	return true, nil
 }
 
-// LoadUser authenticates a user and generates a JWT token upon successful authentication.
+// FindUser retrieves a user from the MongoDB database by their username.
 //
-// It takes a username and password as input, verifies the credentials against the stored
-// information in the database, and returns a signed JWT token if authentication is successful.
+// This method queries the MongoDB collection for a user document matching the given username.
+// If found, it constructs and returns a domain.User struct with the user's information.
 //
 // Parameters:
-//   - username: The username of the user trying to authenticate.
-//   - password: The password provided by the user for authentication.
+//   - username: A string representing the username of the user to find.
+//   - password: A string representing the password of the user (Note: This parameter is currently unused in the method body).
 //
 // Returns:
-//   - string: A signed JWT token if authentication is successful.
-//   - error: An error if authentication fails or if there's an issue during the process.
+//   - domain.User: A User struct containing the user's information if found.
+//   - error: An error if the user is not found or if there's a database error.
+//     The error will be "user not found" if no matching user document is found,
+//     or "failed to load user: [specific error]" for other database errors.
 //
-// Possible errors:
-//   - "failed to load user": If the user cannot be found in the database.
-//   - "invalid password format in database": If the stored password is not in the expected format.
-//   - "invalid password or username": If the provided credentials do not match.
-//   - "error comparing passwords": If there's an unexpected error during password comparison.
-//   - "error while creating jwt": If there's an issue generating the JWT token.
-//
-// Note: This function uses a hard-coded JWT key for demonstration purposes.
-// In a production environment, the key should be securely stored and accessed.
-func (u *UserPersistenceMongoAdapter) LoadUser(username string, password string) (string, error) {
+// Note:
+//   - The password parameter is currently not used in the method body. Consider removing it if it's not needed.
+//   - This method assumes that the "username" and "password" fields in the MongoDB document are strings.
+//     It will panic if these fields are of a different type.
+func (u *UserPersistenceMongoAdapter) FindUser(username string) (domain.User, error) {
 	var result bson.M
 	err := u.collection.FindOne(context.Background(), bson.M{"username": username}).Decode(&result)
 	if err != nil {
-		return "", fmt.Errorf("failed to load user: %w", err)
-	}
-
-	storedHash, ok := result["password"].([]byte)
-	if !ok {
-		return "", fmt.Errorf("invalid password format in database")
-	}
-
-	err = bcrypt.CompareHashAndPassword(storedHash, []byte(password))
-	if err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return "", fmt.Errorf("invalid password or username")
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return domain.User{}, fmt.Errorf("user not found")
 		}
-		return "", fmt.Errorf("error comparing passwords: %w", err)
+		return domain.User{}, fmt.Errorf("failed to load user: %w", err)
 	}
 
-	//TODO: Set claims for the JWT token (username, role 'USER')
-	var jwtKey = []byte("my_secret_key") /*This is only for demo purpose, in a real application load the key from somewhere, for example an environment variable */
-	token := jwt.New(jwt.SigningMethodHS256)
-	signedString, err := token.SignedString(jwtKey)
-	if err != nil {
-		return "", fmt.Errorf("error while creating jwt: %w", err)
+	user := domain.User{
+		Username: result["username"].(string),
+		Password: result["password"].(string),
 	}
 
-	return signedString, nil
+	return user, nil
 }
 
 // Close terminates the connection to the MongoDB database.

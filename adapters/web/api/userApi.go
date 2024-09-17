@@ -38,6 +38,7 @@ func NewUserApiAdapter(registerUserPort usecases.RegisterUserPort, loadUserPort 
 // This method registers the necessary HTTP handlers with the given ServeMux.
 func (ua *UserAdapter) InitUserRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /user/register", ua.handleUserRegister)
+	//TODO: add route for loading a user
 }
 
 // handleUserRegister handles HTTP POST requests for user registration.
@@ -71,4 +72,8 @@ func (ua *UserAdapter) handleUserRegister(w http.ResponseWriter, r *http.Request
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (ua *UserAdapter) handleLoadUser(w http.ResponseWriter, r *http.Request) {
+	//TODO: implement handler for api route for loading a user
 }

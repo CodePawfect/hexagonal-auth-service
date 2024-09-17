@@ -2,7 +2,14 @@
 // It acts as an intermediary between the adapter layer and the domain layer,
 package service
 
-import "user-auth-hexagonal-architecture/internal/ports/persistence"
+import (
+	"errors"
+	"fmt"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+	"time"
+	"user-auth-hexagonal-architecture/internal/ports/persistence"
+)
 
 // LoadUserService handles the business logic for user authentication.
 // It implements the LoadUserPort interface from the usecases package.
@@ -21,19 +28,61 @@ func NewLoadUserService(userPersistence persistence.UserPersistencePort) *LoadUs
 	return &LoadUserService{userPersistence}
 }
 
-// LoadUser attempts to authenticate a user with the given credentials.
+// LoadUser authenticates a user and generates a JWT token upon successful authentication.
 //
-// This method is intended to verify the user's credentials against the stored data.
-// The current implementation is a placeholder and always returns true.
+// This method performs the following steps:
+// 1. Retrieves the user from the persistence layer using the provided username.
+// 2. Compares the provided password with the stored (hashed) password.
+// 3. If authentication is successful, generates a JWT token with user claims.
 //
 // Parameters:
-//   - username: The username of the user attempting to authenticate
-//   - password: The password provided for authentication
+//   - username: A string representing the username of the user to authenticate.
+//   - password: A string representing the password to verify.
 //
 // Returns:
-//   - bool: True if authentication is successful, false otherwise
-//   - error: An error if the authentication process fails, nil otherwise
-func (lu *LoadUserService) LoadUser(username string, password string) (bool, error) {
-	//TODO implement LoadUser
-	return true, nil
+//   - string: A signed JWT token string if authentication is successful.
+//   - error: An error in the following cases:
+//   - If the user is not found in the persistence layer.
+//   - If the provided password doesn't match the stored password.
+//   - If there's an error during password comparison.
+//   - If there's an error while creating or signing the JWT token.
+//
+// The JWT token includes the following claims:
+//   - username: The authenticated user's username.
+//   - role: The user's role.
+//   - exp: The expiration time of the token (set to 24 hours from creation).
+//
+// Note:
+//   - This method uses bcrypt for password comparison.
+//   - The JWT signing key is hardcoded for demonstration purposes.
+//     In a production environment, this should be securely managed.
+//   - Error messages for authentication failures are intentionally vague
+//     to prevent information leakage.
+func (lu *LoadUserService) LoadUser(username string, password string) (string, error) {
+	user, err := lu.userPersistence.FindUser(username)
+	if err != nil {
+		return "", fmt.Errorf("error finding user: %w", err)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return "", fmt.Errorf("invalid username or password")
+		}
+		return "", fmt.Errorf("error comparing passwords: %w", err)
+	}
+
+	var jwtKey = []byte("my_secret_key") // This is only for demo purposes
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["username"] = user.Username
+	claims["role"] = user.Role
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() // Token expires in 24 hours
+
+	signedString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", fmt.Errorf("error while creating jwt: %w", err)
+	}
+
+	return signedString, nil
 }
