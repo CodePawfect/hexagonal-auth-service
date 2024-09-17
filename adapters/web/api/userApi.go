@@ -8,9 +8,9 @@ import (
 	"user-auth-hexagonal-architecture/internal/ports/usecases"
 )
 
-// UserAdapter handles HTTP requests for user operations.
+// UserApi handles HTTP requests for user operations.
 // It acts as an adapter between the HTTP layer and the application's use cases.
-type UserAdapter struct {
+type UserApi struct {
 	registerUserPort usecases.RegisterUserPort
 	loadUserPort     usecases.LoadUserPort
 }
@@ -21,22 +21,22 @@ type userRequest struct {
 	Password string `json:"password"`
 }
 
-// NewUserApiAdapter creates a new UserAdapter with the given use case ports.
+// NewUserApiAdapter creates a new UserApi with the given use case ports.
 //
 // Parameters:
 //   - registerUserPort: Port for user registration use case
 //   - loadUserPort: Port for user loading use case
 //
 // Returns:
-//   - *UserAdapter: A pointer to the newly created UserAdapter
-func NewUserApiAdapter(registerUserPort usecases.RegisterUserPort, loadUserPort usecases.LoadUserPort) *UserAdapter {
-	return &UserAdapter{registerUserPort, loadUserPort}
+//   - *UserApi: A pointer to the newly created UserApi
+func NewUserApiAdapter(registerUserPort usecases.RegisterUserPort, loadUserPort usecases.LoadUserPort) *UserApi {
+	return &UserApi{registerUserPort, loadUserPort}
 }
 
 // InitUserRoutes sets up the HTTP routes for user-related operations.
 //
 // This method registers the necessary HTTP handlers with the given ServeMux.
-func (ua *UserAdapter) InitUserRoutes(mux *http.ServeMux) {
+func (ua *UserApi) InitUserRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /user/register", ua.handleUserRegister)
 	//TODO: add route for loading a user
 }
@@ -56,7 +56,7 @@ func (ua *UserAdapter) InitUserRoutes(mux *http.ServeMux) {
 //   - r: HTTP Request containing the registration data
 //
 // Note: This method logs errors but does not return them to the caller.
-func (ua *UserAdapter) handleUserRegister(w http.ResponseWriter, r *http.Request) {
+func (ua *UserApi) handleUserRegister(w http.ResponseWriter, r *http.Request) {
 	var userRequest userRequest
 	err := json.NewDecoder(r.Body).Decode(&userRequest)
 	if err != nil {
@@ -74,6 +74,6 @@ func (ua *UserAdapter) handleUserRegister(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (ua *UserAdapter) handleLoadUser(w http.ResponseWriter, r *http.Request) {
+func (ua *UserApi) handleLoadUser(w http.ResponseWriter, r *http.Request) {
 	//TODO: implement handler for api route for loading a user
 }
