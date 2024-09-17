@@ -59,6 +59,8 @@ curl -v -X POST http://localhost:8080/user/register \
   "password": "test123"
 }'
 ```
+## Contributing
+I welcome contributions from the community! Whether you're fixing bugs, improving documentation, or proposing new features, your efforts are appreciated.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
