@@ -74,6 +74,30 @@ func (ua *UserApi) handleUserRegister(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// handleLoadUser handles HTTP POST requests for user authentication.
+//
+// This function processes user login attempts by decoding the JSON request body,
+// calling the LoadUser use case, and responding with appropriate HTTP status codes.
+//
+// The function expects a JSON body with "username" and "password" fields.
+// On successful authentication, it responds with HTTP 200 OK and a JWT token in the response body.
+// On failure, it responds with one of the following:
+//   - 400 Bad Request for invalid JSON format
+//   - 401 Unauthorized for invalid credentials
+//   - 500 Internal Server Error for unexpected errors during the authentication process
+//
+// Parameters:
+//   - w: HTTP ResponseWriter to write the response
+//   - r: HTTP Request containing the login credentials
+//
+// The response body for a successful login will contain a JSON object with a "token" field:
+//
+//	{"token": "eyJhbGciOiJIUzI1NiIs..."}
+//
+// Note:
+//   - This method logs errors but does not return them to the caller to avoid
+//     leaking sensitive information.
+//   - The actual JWT token generation is handled by the LoadUser use case.
 func (ua *UserApi) handleLoadUser(w http.ResponseWriter, r *http.Request) {
 	//TODO: implement handler for api route for loading a user
 }
