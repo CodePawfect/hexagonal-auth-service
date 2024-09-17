@@ -28,7 +28,7 @@ func main() {
 	userApiAdapter.InitUserRoutes(mux)
 
 	log.Println("Starting server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
 
 // createMongoClient creates a new MongoDB client and returns it.
